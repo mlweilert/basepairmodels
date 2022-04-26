@@ -2,28 +2,28 @@
     Python script for network training via the CLI
 
     License:
-    
+
     MIT License
 
     Copyright (c) 2020 Kundaje Lab
 
-    Permission is hereby granted, free of charge, to any person 
+    Permission is hereby granted, free of charge, to any person
     obtaining a copy of this software and associated documentation
-    files (the "Software"), to deal in the Software without 
+    files (the "Software"), to deal in the Software without
     restriction, including without limitation the rights to use, copy,
     modify, merge, publish, distribute, sublicense, and/or sell copies
     of the Software, and to permit persons to whom the Software is
     furnished to do so, subject to the following conditions:
 
-    The above copyright notice and this permission notice shall be 
+    The above copyright notice and this permission notice shall be
     included in all copies or substantial portions of the Software.
 
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, 
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-    OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND 
+    OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
     BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
-    ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
+    ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
     CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 
@@ -51,14 +51,14 @@ def main():
     input_params['stranded'] = args.stranded
     input_params['has_control'] = args.has_control
 
-    # output params 
+    # output params
     output_params = {}
     output_params['automate_filenames'] = args.automate_filenames
     output_params['time_zone'] = args.time_zone
     output_params['tag_length'] = args.tag_length
     output_params['output_dir'] = args.output_dir
     output_params['model_output_filename']= args.model_output_filename
-    
+
     # genome params
     genome_params = {}
     genome_params['reference_genome'] = args.reference_genome
@@ -67,7 +67,7 @@ def main():
     genome_params['exclude_chroms'] = args.exclude_chroms
 
     # batch generation parameters
-    batch_gen_params = {}    
+    batch_gen_params = {}
     batch_gen_params['sequence_generator_name'] = args.sequence_generator_name
     batch_gen_params['input_seq_len'] = args.input_seq_len
     batch_gen_params['output_len'] = args.output_len
@@ -76,7 +76,7 @@ def main():
     batch_gen_params['negative_sampling_rate'] = args.negative_sampling_rate
     batch_gen_params['max_jitter'] = args.max_jitter
     batch_gen_params['shuffle'] = args.shuffle
-    
+
     # hyper parameters
     hyper_params = {}
     hyper_params['epochs'] = args.epochs
@@ -89,19 +89,22 @@ def main():
         args.reduce_lr_on_plateau_patience
     hyper_params['lr_reduction_factor'] = \
         args.lr_reduction_factor
-    
+
     # parallelization parms
     parallelization_params = {}
     parallelization_params['threads'] = args.threads
     parallelization_params['gpus'] = args.gpus
-    
+
     # network params
     network_params = {}
     network_params['name'] = args.model_arch_name
     network_params['filters'] = args.filters
     network_params['counts_loss_weight'] = args.counts_loss_weight
     network_params['control_smoothing'] = args.control_smoothing
-    
+    network_params['num_dilation_layers'] = args.num_dilation_layers
+    network_params['conv1_kernel_size'] = args.conv1_kernel_size
+    network_params['profile_kernel_size'] = args.profile_kernel_size
+
     # attribution prior params
     attribution_prior_params = {}
     attribution_prior_params['frquency_limit'] = \
@@ -114,7 +117,7 @@ def main():
         args.attribution_prior_profile_grad_loss_weight
     attribution_prior_params['counts_grad_loss_weight'] = \
         args.attribution_prior_counts_grad_loss_weight
-    
+
     if not os.path.exists(output_params['output_dir']):
         raise NoTracebackException(
             "Directory {} does not exist".format(output_params['output_dir']))
@@ -128,33 +131,31 @@ def main():
         raise NoTracebackException(
             "Reference genome file {} does not exist".format(
                 genome_params['reference_genome'] ))
-    
+
     if not os.path.exists(genome_params['chrom_sizes']):
         raise NoTracebackException(
             "Chromosome sizes file {} does not exist".format(
             genome_params['chrom_sizes']))
-        
+
     try:
         get_model = getattr(model_archs, network_params['name'])
     except AttributeError:
         raise NoTracebackException(
             "Network {} not found in model definitions".format(
                 network_params['name']))
-    
+
     if not os.path.isfile(args.splits):
         raise NoTracebackException("File not found: {}", args.splits)
-                
+
     # load splits from json file
     with open(args.splits, "r") as splits_json:
         splits = json.loads(splits_json.read())
-    
+
     # training and validation
     training.train_and_validate_ksplits(
-        input_params, output_params, genome_params, batch_gen_params, 
-        hyper_params, parallelization_params, network_params, 
+        input_params, output_params, genome_params, batch_gen_params,
+        hyper_params, parallelization_params, network_params,
         args.use_attribution_prior, attribution_prior_params, splits)
 
 if __name__ == '__main__':
     main()
-
-
